@@ -58,11 +58,36 @@ async def start_command(client, message):
     reply_markup = InlineKeyboardMarkup([[join_button, developer_button]])
     await message.reply_text(reply_message, reply_markup=reply_markup)
 
+async def is_user_member(client, user_id):
+    try:
+        member = await client.get_chat_member(fsub_id, user_id)
+        logging.info(f"User {user_id} membership status: {member.status}")
+        if member.status in [
+            ChatMemberStatus.MEMBER, 
+            ChatMemberStatus.ADMINISTRATOR, 
+            ChatMemberStatus.OWNER, 
+            ChatMemberStatus.RESTRICTED
+        ]:
+            return True
+        else:
+            return False
+    except Exception as e:
+        logging.error(f"Error checking membership status for user {user_id}: {e}")
+        return False
+
+@app.on_message(filters.text)
+async def handle_message(client, message: Message):
+    user_id = message.from_user.id
+    user_mention = message.from_user.mention
+    logging.info(f"Received message from {user_mention} (user_id: {user_id})")
+    
+    is_member = await is_user_member(client, user_id)
 
     if not is_member:
-        join_button = InlineKeyboardButton("ᴊᴏɪɴ ❤️🚀", url="https://t.me/FDBotz")
+        logging.info(f"User {user_mention} (user_id: {user_id}) is not a member of the required channel")
+        join_button = InlineKeyboardButton("Join ❤️🚀", url="https://t.me/FDBotz")
         reply_markup = InlineKeyboardMarkup([[join_button]])
-        await message.reply_text("ʏᴏᴜ ᴍᴜsᴛ ᴊᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍᴇ.", reply_markup=reply_markup)
+        await message.reply_text("You must join my channel to use me.", reply_markup=reply_markup)
         return
 
     terabox_link = message.text.strip()
