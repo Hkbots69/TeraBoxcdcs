@@ -7,7 +7,6 @@ from pyrogram.enums import ChatMemberStatus
 from dotenv import load_dotenv
 from os import environ
 import os
-import time
 from status import format_progress_bar
 from video import download_video, upload_video
 from web import keep_alive
@@ -30,19 +29,13 @@ bot_token = os.environ.get('BOT_TOKEN', '')
 if len(bot_token) == 0:
     logging.error("BOT_TOKEN variable is missing! Exiting now")
     exit(1)
+
 dump_id = os.environ.get('DUMP_CHAT_ID', '')
 if len(dump_id) == 0:
     logging.error("DUMP_CHAT_ID variable is missing! Exiting now")
     exit(1)
 else:
     dump_id = int(dump_id)
-
-fsub_id = os.environ.get('FSUB_ID', '')
-if len(fsub_id) == 0:
-    logging.error("FSUB_ID variable is missing! Exiting now")
-    exit(1)
-else:
-    fsub_id = int(fsub_id)
 
 app = Client("my_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
@@ -59,21 +52,8 @@ async def start_command(client, message):
     await message.reply_text(reply_message, reply_markup=reply_markup)
 
 async def is_user_member(client, user_id):
-    try:
-        member = await client.get_chat_member(fsub_id, user_id)
-        logging.info(f"User {user_id} membership status: {member.status}")
-        if member.status in [
-            ChatMemberStatus.MEMBER, 
-            ChatMemberStatus.ADMINISTRATOR, 
-            ChatMemberStatus.OWNER, 
-            ChatMemberStatus.RESTRICTED
-        ]:
-            return True
-        else:
-            return False
-    except Exception as e:
-        logging.error(f"Error checking membership status for user {user_id}: {e}")
-        return False
+    # Implement your membership status logic here if needed
+    return True
 
 @app.on_message(filters.text)
 async def handle_message(client, message: Message):
