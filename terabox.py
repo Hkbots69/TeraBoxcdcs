@@ -53,8 +53,8 @@ async def start_command(client, message):
     await sticker_message.delete()
     user_mention = message.from_user.mention
     reply_message = f"ᴡᴇʟᴄᴏᴍᴇ, {user_mention}.\n\n🌟 ɪ ᴀᴍ ᴀ ᴛᴇʀᴀʙᴏx ᴅᴏᴡɴʟᴏᴀᴅᴇʀ ʙᴏᴛ. sᴇɴᴅ ᴍᴇ ᴀɴʏ ᴛᴇʀᴀʙᴏx ʟɪɴᴋ ɪ ᴡɪʟʟ ᴅᴏᴡɴʟᴏᴀᴅ ᴡɪᴛʜɪɴ ғᴇᴡ sᴇᴄᴏɴᴅs ᴀɴᴅ sᴇɴᴅ ɪᴛ ᴛᴏ ʏᴏᴜ ✨."
-    join_button = InlineKeyboardButton("ᴊᴏɪɴ ❤️🚀", url="https://t.me/FDBotz")
-    developer_button = InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ ⚡️", url="https://t.me/TGTesla")
+    join_button = InlineKeyboardButton("ᴊᴏɪɴ ❤️🚀", url="https://t.me/ceabox")
+    developer_button = InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ ⚡️", url="https://t.me/ceabox")
     reply_markup = InlineKeyboardMarkup([[join_button, developer_button]])
     await message.reply_text(reply_message, reply_markup=reply_markup)
 
@@ -85,7 +85,7 @@ async def handle_message(client, message: Message):
 
     if not is_member:
         logging.info(f"User {user_mention} (user_id: {user_id}) is not a member of the required channel")
-        join_button = InlineKeyboardButton("Join ❤️🚀", url="https://t.me/FDBotz")
+        join_button = InlineKeyboardButton("Join ❤️🚀", url="https://t.me/ceabox")
         reply_markup = InlineKeyboardMarkup([[join_button]])
         await message.reply_text("You must join my channel to use me.", reply_markup=reply_markup)
         return
