@@ -1,3 +1,10 @@
+import telegram
+import feedparser
+import requests
+from PIL import Image
+from io import BytesIO
+import os
+import time
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 import logging
@@ -6,39 +13,80 @@ from datetime import datetime
 from pyrogram.enums import ChatMemberStatus
 from dotenv import load_dotenv
 from os import environ
-import os
 from status import format_progress_bar
 from video import download_video, upload_video
 from web import keep_alive
 
+# Load environment variables
 load_dotenv('config.env', override=True)
 
-logging.basicConfig(level=logging.INFO)
+# Telegram bot API token
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_API', '')
+# Channel name where bot will post updates
+CHANNEL_NAME = '@epornerfeed'
+# RSS Feed URL
+RSS_FEED_URL = 'https://www.eporner.com/feed.rss'
 
+# Initialize Telegram bot
+bot = telegram.Bot(token=TELEGRAM_TOKEN)
+
+# Initialize Pyrogram client
 api_id = os.environ.get('TELEGRAM_API', '')
-if len(api_id) == 0:
-    logging.error("TELEGRAM_API variable is missing! Exiting now")
-    exit(1)
-
 api_hash = os.environ.get('TELEGRAM_HASH', '')
-if len(api_hash) == 0:
-    logging.error("TELEGRAM_HASH variable is missing! Exiting now")
-    exit(1)
-    
 bot_token = os.environ.get('BOT_TOKEN', '')
-if len(bot_token) == 0:
-    logging.error("BOT_TOKEN variable is missing! Exiting now")
-    exit(1)
-
 dump_id = os.environ.get('DUMP_CHAT_ID', '')
-if len(dump_id) == 0:
-    logging.error("DUMP_CHAT_ID variable is missing! Exiting now")
+if not all([api_id, api_hash, bot_token, dump_id]):
+    logging.error("One or more environment variables are missing! Exiting now")
     exit(1)
-else:
-    dump_id = int(dump_id)
 
 app = Client("my_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
+# Function to send message to Telegram channel
+def send_message(title, description, video_link, image_url):
+    # Format description with hashtags
+    hashtags = ' '.join(f'#{tag.strip()}' for tag in description.split(','))
+    message = f"*{title}*\n\n{hashtags}\n\n[Click for Video]({video_link})"
+    
+    # Download and send image
+    try:
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            image_data = BytesIO(response.content)
+            image = Image.open(image_data)
+            # Convert image to bytes
+            image_bytes = BytesIO()
+            image.save(image_bytes, format='JPEG')
+            image_bytes.seek(0)
+            # Send photo with caption
+            bot.send_photo(chat_id=CHANNEL_NAME, photo=image_bytes, caption=message, parse_mode=telegram.ParseMode.MARKDOWN)
+    except Exception as e:
+        print(f"Failed to send message: {e}")
+
+# Function to fetch and process RSS feed
+def fetch_rss_and_send():
+    feed = feedparser.parse(RSS_FEED_URL)
+    sent_links = set()
+
+    for entry in feed.entries:
+        title = entry.title
+        video_link = entry.link
+        description = entry.description
+
+        # Extract image URL from enclosure tag
+        try:
+            image_url = entry.enclosures[0]['url']
+        except (IndexError, KeyError):
+            continue
+        
+        # Check if already sent this link
+        if video_link in sent_links:
+            continue
+
+        # Send message to Telegram
+        send_message(title, description, video_link, image_url)
+        sent_links.add(video_link)
+
+# Pyrogram handlers
 @app.on_message(filters.command("start"))
 async def start_command(client, message):
     sticker_message = await message.reply_sticker("CAACAgIAAxkBAAEYonplzwrczhVu3I6HqPBzro3L2JU6YAACvAUAAj-VzAoTSKpoG9FPRjQE")
@@ -82,7 +130,7 @@ async def handle_message(client, message: Message):
         await upload_video(client, file_path, thumbnail_path, video_title, reply_msg, dump_id, user_mention, user_id, message)
     except Exception as e:
         logging.error(f"Error handling message: {e}")
-        await reply_msg.edit_text("ғᴀɪʟᴇᴅ ᴛᴏ ᴘʀᴏᴄᴇss ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ.\nɪғ ʏᴏᴜʀ ғɪʟᴇ sɪᴢᴇ ɪs ᴍᴏʀᴇ ᴛʜᴀɴ 120ᴍʙ ɪᴛ ᴍɪɢʜᴛ ғᴀɪʟ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ.\nᴛʜɪs ɪs ᴛʜᴇ ᴛᴇʀᴀʙᴏx ɪssᴜᴇ, sᴏᴍᴇ ʟɪɴᴋs ᴀʀᴇ ʙʀᴏᴋᴇɴ, sᴏ ᴅᴏɴᴛ ᴄᴏɴᴛᴀᴄᴛ ʙᴏᴛ's ᴏᴡɴᴇʀ")
+        await reply_msg.edit_text("ғᴀɪʟᴇᴅ ᴛᴏ ᴘʀᴏᴄᴇss ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ.\nɪғ ʏᴏᴜʀ ғɪʟᴇ sɪᴢᴇ ɪs ᴍᴏʀᴇ ᴛʜᴀɴ 120ᴍʙ ɪᴛ ᴍɪɢʜᴛ ғᴀɪʟ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ.\nᴛʜɪs ɪs ᴛʜᴇ ᴛᴇʀᴀʙᴏx ɪssᴜᴇ, sᴏᴍᴇ ʟɪɴᴋs ᴀʀᴇ ʙ
 
 if __name__ == "__main__":
     keep_alive()
